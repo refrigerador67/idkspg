@@ -1,3 +1,3 @@
-# idkpg - I don't know page generator
+# idkpg - I don't know static page generator
 
 
