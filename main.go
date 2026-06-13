@@ -10,21 +10,25 @@ import (
 	"path/filepath"
 	"io/fs"
 	"bytes"
-	//"bufio"
-	//"strings"
+	"bufio"
+	"strings"
 )
 
 func main() {
 
 	fmt.Printf("\n\033[32midkspg - I Don't Know Static Page Generator \n ———————————————————————————————— \n\033[0m\n")
+	
 	// Reads template file
-	templatehtml, err := os.ReadFile("template.html")
-	fmt.Printf("Reading template... \n")
+	fmt.Printf("Reading templates... \n\n")
+	templateHtml, err := os.ReadFile("template.html")
+	itemHtml, err := os.ReadFile("item.html")
+	indexHtml, err := os.ReadFile("indextemplate.html")
+	
 	// Continues operation only if template.html is read
 	if(err != nil){
-		fmt.Printf("\n\033[31mError reading template.html \n%v\n", err)
+		fmt.Printf("\n\033[31mError reading templates \n%v\n", err)
 	}else{
-		traverse("blog/", templatehtml)
+		traverse("blog/", templateHtml, itemHtml, indexHtml)
 	}
 }
 
@@ -43,10 +47,9 @@ func mdToHTML(md []byte) []byte {
 	return markdown.Render(doc, renderer)
 }
 
-func traverse(rootpath string, templatehtml []byte){
+func traverse(rootpath string, templatehtml []byte, itemHtml []byte, indexHtml []byte){
 
-	// Initialize metadata variable for the .md files
-	//metadata := make(map[string]string)
+	var indexItems string
 
 	// Traverses the directory
 	err := filepath.WalkDir(rootpath, func(path string, info fs.DirEntry, err error) error {
@@ -61,21 +64,29 @@ func traverse(rootpath string, templatehtml []byte){
 				fmt.Printf("\n\033[31mError reading .md file \n%v\n", err)
 			}else{
 				// Joins the parsed file with a template.html 
-				html := bytes.Replace(templatehtml, []byte("<!-- REPLACE -->"), mdToHTML(mdfile) , -1)
+				html := bytes.Replace(templatehtml, []byte("<!-- REPLACE -->"), mdToHTML(mdfile), -1)
+
 				// Writes the file to the working directory
-				os.WriteFile(filepath.Dir(path) + "/index.html", html, 0644)
+				outfile := filepath.Dir(path) + "/index.html"
+				os.WriteFile(outfile, html, 0644)
+
+				indexItems = indexItems + string(itemBuilder(scanMetadata(path), outfile, itemHtml))
 			}
 		}
 		return nil
 	})
 
+	html := bytes.Replace(indexHtml, []byte("<!-- REPLACE -->"), []byte(indexItems), -1)
+	os.WriteFile("index.html", html, 0644)
+
 	if err != nil {
 		fmt.Printf("womp womp: %v\n", err)
 	}
 }
-/*
-func scanMetadata(path []byte) map[string]string{
 
+func scanMetadata(path string) map[string]string{
+
+	metadata := make(map[string]string)
 	file, _ := os.Open(path)
 	scanner := bufio.NewScanner(file)
 
@@ -97,4 +108,12 @@ func scanMetadata(path []byte) map[string]string{
 	}
 	return metadata
 }
-*/
+
+func itemBuilder(metadata map[string]string, link string, itemHtml []byte) []byte {
+
+
+	item := bytes.Replace(itemHtml, []byte("<!-- TITLE -->"), []byte(metadata["_TITLE"]), -1)
+	item = bytes.Replace(item, []byte("<!-- DESCRIPTION -->"), []byte(metadata["_DESCRIPTION"]), -1)
+	item = bytes.Replace(item, []byte("<!-- LINK -->"), []byte(link), -1)
+	return item
+}
