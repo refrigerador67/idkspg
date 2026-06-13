@@ -10,15 +10,22 @@ import (
 	"path/filepath"
 	"io/fs"
 	"bytes"
-	"bufio"
-	"strings"
+	//"bufio"
+	//"strings"
 )
 
 func main() {
 
-	templatehtml, _ := os.ReadFile("template.html")
-	traverse("blog/", templatehtml)
-
+	fmt.Printf("\n\033[32midkspg - I Don't Know Static Page Generator \n ———————————————————————————————— \n\033[0m\n")
+	// Reads template file
+	templatehtml, err := os.ReadFile("template.html")
+	fmt.Printf("Reading template... \n")
+	// Continues operation only if template.html is read
+	if(err != nil){
+		fmt.Printf("\n\033[31mError reading template.html \n%v\n", err)
+	}else{
+		traverse("blog/", templatehtml)
+	}
 }
 
 func mdToHTML(md []byte) []byte {
@@ -39,24 +46,25 @@ func mdToHTML(md []byte) []byte {
 func traverse(rootpath string, templatehtml []byte){
 
 	// Initialize metadata variable for the .md files
-	metadata := make(map[string]string)
+	//metadata := make(map[string]string)
 
 	// Traverses the directory
 	err := filepath.WalkDir(rootpath, func(path string, info fs.DirEntry, err error) error {
-		if info.IsDir() && path != rootpath {
-			// Prints the current working directory
-			fmt.Printf("Processing %s\n", path)
-		}
 
 		if filepath.Ext(path) == ".md" {
+			// Prints the current working file
+			fmt.Printf("Processing %s\n", path)
 
 			// Opens the .md file
-			mdfile, _ := os.ReadFile(path)
-			// Joins the parsed file with a template.html 
-			html := bytes.Replace(templatehtml, []byte("<!-- REPLACE -->"), mdToHTML(mdfile) , -1)
-			// Writes the file to the working directory
-			os.WriteFile(filepath.Dir(path) + "/index.html", html, 0644)
-		
+			mdfile, err := os.ReadFile(path)
+			if(err != nil){
+				fmt.Printf("\n\033[31mError reading .md file \n%v\n", err)
+			}else{
+				// Joins the parsed file with a template.html 
+				html := bytes.Replace(templatehtml, []byte("<!-- REPLACE -->"), mdToHTML(mdfile) , -1)
+				// Writes the file to the working directory
+				os.WriteFile(filepath.Dir(path) + "/index.html", html, 0644)
+			}
 		}
 		return nil
 	})
@@ -65,7 +73,7 @@ func traverse(rootpath string, templatehtml []byte){
 		fmt.Printf("womp womp: %v\n", err)
 	}
 }
-
+/*
 func scanMetadata(path []byte) map[string]string{
 
 	file, _ := os.Open(path)
@@ -89,3 +97,4 @@ func scanMetadata(path []byte) map[string]string{
 	}
 	return metadata
 }
+*/
